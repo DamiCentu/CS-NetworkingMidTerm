@@ -6,7 +6,7 @@ using Photon.Realtime;
 
 public class PhotonNetworkManager : MonoBehaviourPunCallbacks
 {
-    public GameObject canvas;
+    public GameObject buttons;
     bool _isHost;
 
     private void Start()
@@ -28,13 +28,13 @@ public class PhotonNetworkManager : MonoBehaviourPunCallbacks
     public override void OnConnectedToMaster()
     {
         Debug.Log("Connected to master");
-        canvas.SetActive(false);
+        buttons.SetActive(false);
         PhotonNetwork.JoinLobby(TypedLobby.Default);
     }
 
     public override void OnDisconnected(DisconnectCause cause)
     {
-        canvas.SetActive(true);
+        buttons.SetActive(true);
     }
 
     public override void OnJoinedLobby()

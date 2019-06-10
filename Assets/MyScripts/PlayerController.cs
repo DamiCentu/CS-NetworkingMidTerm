@@ -8,7 +8,7 @@ public class PlayerController : MonoBehaviourPun
     PhotonView _view;
     ServerNetwork _server;
 
-    void Awake()
+    void Start()
     {
         _server = ServerNetwork.Instance;
         _view = GetComponent<PhotonView>();

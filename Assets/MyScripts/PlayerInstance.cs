@@ -52,10 +52,10 @@ public class PlayerInstance : MonoBehaviourPun
     void AdjustToBoundary()
     {
         if (_rb.position.x > _boundary.x || _rb.position.x < -_boundary.x)
-            _view.RPC("AdjustVelocity", RpcTarget.OthersBuffered, new Vector3(0, 0, _rb.velocity.z));
+            ServerNetwork.Instance.PlayerRequestAdjustVelocity(PhotonNetwork.LocalPlayer, new Vector3(0, 0, _rb.velocity.z));
         
         if (_rb.position.z > _boundary.z || _rb.position.z < -_boundary.z)
-            _view.RPC("AdjustVelocity", RpcTarget.OthersBuffered, new Vector3(_rb.velocity.x, 0, 0));
+            ServerNetwork.Instance.PlayerRequestAdjustVelocity(PhotonNetwork.LocalPlayer, new Vector3(_rb.velocity.x, 0, 0));
     }
 
     public void RotatePlayer(float v)
@@ -63,11 +63,21 @@ public class PlayerInstance : MonoBehaviourPun
         if (v != 0)
             _rb.rotation = _rb.rotation * Quaternion.Euler(new Vector3(0f, v, 0f).normalized * rotateSpeed);
     }
-
-    [PunRPC]
+    
     public void AdjustVelocity(Vector3 velocity)
     {
         _rb.velocity = velocity;
         _rb.position = new Vector3(Mathf.Clamp(_rb.position.x, -_boundary.x, _boundary.x), 0.0f, Mathf.Clamp(_rb.position.z, -_boundary.z, _boundary.z));
+    }
+
+    public void SetActive(bool active)
+    {
+        _view.RPC("SetActiveRPC", RpcTarget.OthersBuffered, active);
+    }
+
+    [PunRPC]
+    void SetActiveRPC(bool active)
+    {
+        gameObject.SetActive(active);
     }
 }
