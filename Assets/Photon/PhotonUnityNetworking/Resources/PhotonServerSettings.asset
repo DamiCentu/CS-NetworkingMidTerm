@@ -42,5 +42,9 @@ MonoBehaviour:
   - SetActiveRPC
   - UpdateTextRPC
   - RequestAdjustVelocity
+  - DestroyMe
+  - RequestDestroyBullet
+  - RequestSetActive
+  - SetBulletOwner
   DisableAutoOpenWizard: 1
   ShowSettings: 0

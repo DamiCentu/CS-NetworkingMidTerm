@@ -2,6 +2,7 @@
 using System.Collections;
 using System;
 using Photon.Pun;
+using Photon.Realtime;
 
 public class PlayerInstance : MonoBehaviourPun
 {
@@ -11,6 +12,8 @@ public class PlayerInstance : MonoBehaviourPun
 	public GameObject shot;
 	public Transform shotSpawn;
 	public float fireRate;
+
+    public int life = 3;
 	 
 	private float nextFire;
 
@@ -19,21 +22,23 @@ public class PlayerInstance : MonoBehaviourPun
     AudioSource _audioSource;
 
     PhotonView _view;
+    ServerNetwork _server;
 
-    private void Awake()
+    private void Start()
     {
+        _server = ServerNetwork.Instance;
         _view = GetComponent<PhotonView>();
         _rb = GetComponent<Rigidbody>();
         _boundary = FindObjectOfType<Boundary>();
         _audioSource = GetComponent<AudioSource>();
     }
 
-    public void InstantiateBullet() //llamar cuando se hace el fire 1
+    public void InstantiateBullet(Player player) //llamar cuando se hace el fire 1
     {
         if (Time.time <= nextFire) return;
 
         nextFire = Time.time + fireRate;
-        Instantiate(shot, shotSpawn.position, shotSpawn.rotation);
+        _server.InstantiateBullet(shotSpawn);
         _audioSource.Play();
     }
 
@@ -52,10 +57,14 @@ public class PlayerInstance : MonoBehaviourPun
     void AdjustToBoundary()
     {
         if (_rb.position.x > _boundary.x || _rb.position.x < -_boundary.x)
-            ServerNetwork.Instance.PlayerRequestAdjustVelocity(PhotonNetwork.LocalPlayer, new Vector3(0, 0, _rb.velocity.z));
+        {
+            AdjustVelocity(new Vector3(0, 0, _rb.velocity.z));
+        }
         
         if (_rb.position.z > _boundary.z || _rb.position.z < -_boundary.z)
-            ServerNetwork.Instance.PlayerRequestAdjustVelocity(PhotonNetwork.LocalPlayer, new Vector3(_rb.velocity.x, 0, 0));
+        {
+            AdjustVelocity(new Vector3(_rb.velocity.x, 0, 0));
+        }
     }
 
     public void RotatePlayer(float v)
@@ -70,14 +79,26 @@ public class PlayerInstance : MonoBehaviourPun
         _rb.position = new Vector3(Mathf.Clamp(_rb.position.x, -_boundary.x, _boundary.x), 0.0f, Mathf.Clamp(_rb.position.z, -_boundary.z, _boundary.z));
     }
 
-    public void SetActive(bool active)
-    {
-        _view.RPC("SetActiveRPC", RpcTarget.OthersBuffered, active);
-    }
+//     public void ActiveGameObject(bool active)
+//     {
+//         gameObject.SetActive(active);
+//     }
 
-    [PunRPC]
-    void SetActiveRPC(bool active)
+    private void OnTriggerEnter(Collider other)
     {
-        gameObject.SetActive(active);
+        var bullet = other.GetComponent<BulletBehaviour>();
+        if (bullet == null) return;
+        if (!_view.IsMine) return;
+        if (!bullet.AreYouMine())
+        {
+            life--;
+            _server.BulletRequestDestroy(bullet);
+            if (life <= 0)
+            {
+                //_view.RPC("TellIAmDefeated", RpcTarget.OthersBuffered);
+                //PhotonNetwork.Disconnect();
+                //Cargar otra escena
+            }
+        }
     }
 }

@@ -7,6 +7,9 @@ public class PlayerController : MonoBehaviourPun
 {
     PhotonView _view;
     ServerNetwork _server;
+    bool _cantMove = true;
+
+    public bool CantMove { get => _cantMove; set => _cantMove = value; }
 
     void Start()
     {
@@ -19,7 +22,7 @@ public class PlayerController : MonoBehaviourPun
         if (!_view.IsMine)
             return;
 
-        if (Input.GetButton("Fire1"))
+        if (Input.GetButtonDown("Fire1"))
         {
             _server.PlayerRequestShoot(PhotonNetwork.LocalPlayer);
         }
