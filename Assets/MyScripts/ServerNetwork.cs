@@ -10,13 +10,20 @@ public class ServerNetwork : MonoBehaviourPun
 {
 
     public static ServerNetwork Instance { get; private set; }
+    public bool PlayerCanMove { get => _playerCanMove; set => _playerCanMove = value; }
+
     PhotonView _view;
     public Player serverReference;
     public int amountOfPlayersToStart = 2;
     public int secondsToStart = 3;
+    public int secondsAtEnd= 3;
 
+    List<PlayerInstance> _loosers = new List<PlayerInstance>();
+
+    int playerId = 0;
 
     Dictionary<Player, PlayerInstance> _players = new Dictionary<Player, PlayerInstance>();
+    private bool _playerCanMove = false;
 
     void Awake()
     {
@@ -44,7 +51,7 @@ public class ServerNetwork : MonoBehaviourPun
         var spawnPoint = spawnPoints.Length > 0 ? spawnPoints[ Random.Range(0, spawnPoints.Length)] : null;
 
         if(spawnPoint)
-            spawnPoint.SetTaken();
+            spawnPoint.SetTaken(true);
 
         var newPlayer = PhotonNetwork.Instantiate("PlayerInstance",
                         spawnPoint.transform.position,
@@ -52,7 +59,7 @@ public class ServerNetwork : MonoBehaviourPun
 
         _players.Add(p, newPlayer);
 
-        //_view.RPC("RequestSetActive", serverReference, p, false);
+        newPlayer.SaveStartPos(spawnPoint.transform.position);       
 
         if (_players.Count > amountOfPlayersToStart - 1)
         {
@@ -71,17 +78,47 @@ public class ServerNetwork : MonoBehaviourPun
 
         textToUpdate.SetActive(false);
 
-        foreach (var player in _players)
-        {
+        PlayerCanMove = true;
+    }
 
-//             _view.RPC("SetActiveRPC", RpcTarget.OthersBuffered, active);
-            //_view.RPC("RequestSetActive", serverReference, player.Key, true);
-            //RequestSetActive(player.Key, true);
-            //_players[player.Key].SetActive(true);
+    public void SetLooser(PlayerInstance instance)
+    {
+        if (!_loosers.Contains(instance))
+        {
+            _loosers.Add(instance);
+        }
+
+        if(_loosers.Count >= _players.Count - 1 ) //1 left
+        {
+            StartCoroutine(EndRoundRoutine(FindObjectsOfType<TextBehaviour>().Where(x => x.id == "startText").First()));
         }
     }
 
+    IEnumerator EndRoundRoutine(TextBehaviour textToUpdate)
+    {
+        PlayerCanMove = false;
+        textToUpdate.SetActive(true);
 
+        Player winner = null;
+        foreach (var player in _players)
+        {
+            if (player.Value.gameObject.activeSelf)
+                winner = player.Key;
+        }
+        textToUpdate.UpdateText("Player " + winner.ActorNumber + "wins" );
+        yield return new WaitForSeconds(secondsAtEnd);
+        textToUpdate.SetActive(true);
+
+        foreach (var player in _players)
+        {
+            player.Value.ResetPlayerInstance();
+        }
+
+        _loosers.Clear();
+
+        StartCoroutine(StartGame(FindObjectsOfType<TextBehaviour>().Where(x => x.id == "startText").First()));
+    }
+   
     //player
 
     [PunRPC]
@@ -96,8 +133,7 @@ public class ServerNetwork : MonoBehaviourPun
     [PunRPC]
     void RequestShoot(Player player)
     {
-        if (!_view.IsMine)
-            return;
+       
 
         if (_players.ContainsKey(player))
             _players[player].InstantiateBullet(player);
@@ -122,16 +158,6 @@ public class ServerNetwork : MonoBehaviourPun
             _players[player].RotatePlayer(axis);
     }
 
-//     [PunRPC]
-//     void RequestSetActive(Player player, bool active)
-//     {
-//         if (!_view.IsMine)
-//             return;
-// 
-//         if (_players.ContainsKey(player))
-//             _players[player].ActiveGameObject(active);
-//     }
-
     public void PlayerRequestShoot(Player player)
     {
         _view.RPC("RequestShoot", serverReference, player);
@@ -147,17 +173,14 @@ public class ServerNetwork : MonoBehaviourPun
         _view.RPC("RequestRotate", serverReference, player, axis);
     }
 
-
-
-
     //bullet
 
-    public void InstantiateBullet(Transform shotSpawn)
+    public void BulletRequestInstantiate(Transform shotSpawn)
     {
         if (!_view.IsMine)
             return;
 
-        var bullet = PhotonNetwork.Instantiate("Bullet", shotSpawn.position, shotSpawn.rotation).GetComponent<BulletBehaviour>();
+        PhotonNetwork.Instantiate("Bullet", shotSpawn.position, shotSpawn.rotation);
     }
 
     public void BulletRequestDestroy(BulletBehaviour bullet)
@@ -166,7 +189,24 @@ public class ServerNetwork : MonoBehaviourPun
             return;
 
         PhotonNetwork.Destroy(bullet.gameObject);
-        Debug.Log("bulletDestroyed");
+    }
+
+    //particles
+
+    public void ParticleRequestInstantiate(string particleName,Transform pos)
+    {
+        if (!_view.IsMine)
+            return;
+        
+        PhotonNetwork.Instantiate(particleName, pos.position, pos.rotation);
+    }
+
+    public void ParticleRequestDestroy(ParticleBehaviour particle)
+    {
+        if (!_view.IsMine)
+            return;
+
+        PhotonNetwork.Destroy(particle.gameObject);
     }
 
 }

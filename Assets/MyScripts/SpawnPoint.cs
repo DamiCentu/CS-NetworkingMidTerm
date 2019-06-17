@@ -15,14 +15,14 @@ public class SpawnPoint : MonoBehaviourPun
         _view = GetComponent<PhotonView>();
     }
 
-    public void SetTaken()
+    public void SetTaken(bool taken)
     {
-        _view.RPC("SetTakenRPC", RpcTarget.OthersBuffered);
+        _view.RPC("SetTakenRPC", RpcTarget.OthersBuffered, taken);
     }
 
     [PunRPC]
-    void SetTakenRPC()
+    void SetTakenRPC(bool taken)
     {
-        _taken = true;
+        _taken = taken;
     }
 }

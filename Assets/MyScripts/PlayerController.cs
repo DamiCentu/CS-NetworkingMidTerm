@@ -7,9 +7,6 @@ public class PlayerController : MonoBehaviourPun
 {
     PhotonView _view;
     ServerNetwork _server;
-    bool _cantMove = true;
-
-    public bool CantMove { get => _cantMove; set => _cantMove = value; }
 
     void Start()
     {
