@@ -105,7 +105,7 @@ public class ServerNetwork : MonoBehaviourPun
             if (player.Value.gameObject.activeSelf)
                 winner = player.Key;
         }
-        textToUpdate.UpdateText("Player " + winner.ActorNumber + "wins" );
+        textToUpdate.UpdateText("Player " + winner.ActorNumber + " wins" );
         yield return new WaitForSeconds(secondsAtEnd);
         textToUpdate.SetActive(true);
 
