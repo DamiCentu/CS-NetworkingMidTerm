@@ -42,7 +42,7 @@ public class PhotonNetworkManager : MonoBehaviourPunCallbacks
         Debug.Log("Log in to lobby");
         if (_isHost)
         {
-            PhotonNetwork.CreateRoom("MainRoom", new RoomOptions() { MaxPlayers = 4 });
+            PhotonNetwork.CreateRoom("MainRoom", new RoomOptions() { MaxPlayers = 5 });
             return;
         }
         PhotonNetwork.JoinRandomRoom();

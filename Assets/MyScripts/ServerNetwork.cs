@@ -75,9 +75,14 @@ public class ServerNetwork : MonoBehaviourPun
         newPlayer.SaveStartPos(spawnPoint.transform.position);
         newPlayer.SetPlayerName("Player " + p.ActorNumber.ToString());
 
-        var text = FindObjectsOfType<TextBehaviour>().Where(x => x.id == "playerLobbyText" && !x.Taken).First();
-        text.SetTaken(true);
-        text.UpdateText("Player: " + p.ActorNumber.ToString());
+        var texts = FindObjectsOfType<TextBehaviour>().Where(x => x.id == "playerLobbyText" && !x.Taken).ToArray();
+        var text = texts.Length > 0  ? texts[0] : null;
+
+        if (text)
+        {
+            text.SetTaken(true);
+            text.UpdateText("Player: " + p.ActorNumber.ToString());
+        }
 
         if (!_startTimerShowed && _players.Count > amountOfPlayersToStart - 1)
         {
