@@ -23,11 +23,24 @@ public class ServerNetwork : MonoBehaviourPun
     int playerId = 0;
 
     Dictionary<Player, PlayerInstance> _players = new Dictionary<Player, PlayerInstance>();
-    private bool _playerCanMove = false;
+    bool _playerCanMove = false;
+    bool _startTimerShowed = false;
+    AsteroidSpawner _asteroidSpawner;
+    SpiderSpawner _spiderSpawner;
+    PowerUpSpawner _powerUpSpawner;
+
+    TextBehaviour _textStart;
+    ActivableGO _panel;
 
     void Awake()
     {
         _view = GetComponent<PhotonView>();
+
+        if (!_textStart)
+            _textStart = FindObjectsOfType<TextBehaviour>().Where(x => x.id == "startText").First();
+
+        if (!_panel)
+            _panel = FindObjectsOfType<ActivableGO>().Where(x => x.id == "Panel").First();
 
         if (!Instance)
         {
@@ -59,30 +72,54 @@ public class ServerNetwork : MonoBehaviourPun
 
         _players.Add(p, newPlayer);
 
-        newPlayer.SaveStartPos(spawnPoint.transform.position);       
+        newPlayer.SaveStartPos(spawnPoint.transform.position);
+        newPlayer.SetPlayerName("Player " + p.ActorNumber.ToString());
 
-        if (_players.Count > amountOfPlayersToStart - 1)
+        var text = FindObjectsOfType<TextBehaviour>().Where(x => x.id == "playerLobbyText" && !x.Taken).First();
+        text.SetTaken(true);
+        text.UpdateText("Player: " + p.ActorNumber.ToString());
+
+        if (!_startTimerShowed && _players.Count > amountOfPlayersToStart - 1)
         {
-            StartCoroutine(StartGame(FindObjectsOfType<TextBehaviour>().Where(x => x.id == "startText").First()));
+            _startTimerShowed = true;
+            
+            StartCoroutine(StartGame());
         }
     }
 
-    IEnumerator StartGame(TextBehaviour textToUpdate)
+    IEnumerator StartGame(bool fromRestart = false)
     {
-        textToUpdate.SetActive(true);
+        if(fromRestart)
+            _textStart.UpdateText("Restarting game");
+
+        yield return new WaitForSeconds(2f);
+        _panel.RequestActivateObject(false);
+        _textStart.SetActive(true);
         for (int i = secondsToStart; i > 0; i--)
         {
-            textToUpdate.UpdateText("Starting game in " + i);
+            _textStart.UpdateText("Starting game in " + i);
             yield return new WaitForSeconds(1f);
         }
 
-        textToUpdate.SetActive(false);
+        _textStart.SetActive(false);
 
         PlayerCanMove = true;
+
+        _asteroidSpawner = gameObject.AddComponent(typeof(AsteroidSpawner)) as AsteroidSpawner;
+        _asteroidSpawner.StartSpawning();
+
+        _spiderSpawner = gameObject.AddComponent(typeof(SpiderSpawner)) as SpiderSpawner;
+        _spiderSpawner.StartSpawning();
+
+        _powerUpSpawner = gameObject.AddComponent(typeof(PowerUpSpawner)) as PowerUpSpawner;
+        _powerUpSpawner.StartSpawning();
     }
 
     public void SetLooser(PlayerInstance instance)
     {
+        if (!_view.IsMine)
+            return;
+
         if (!_loosers.Contains(instance))
         {
             _loosers.Add(instance);
@@ -90,14 +127,14 @@ public class ServerNetwork : MonoBehaviourPun
 
         if(_loosers.Count >= _players.Count - 1 ) //1 left
         {
-            StartCoroutine(EndRoundRoutine(FindObjectsOfType<TextBehaviour>().Where(x => x.id == "startText").First()));
+            StartCoroutine(EndRoundRoutine());
         }
     }
 
-    IEnumerator EndRoundRoutine(TextBehaviour textToUpdate)
+    IEnumerator EndRoundRoutine()
     {
         PlayerCanMove = false;
-        textToUpdate.SetActive(true);
+        _textStart.SetActive(true);
 
         Player winner = null;
         foreach (var player in _players)
@@ -105,9 +142,8 @@ public class ServerNetwork : MonoBehaviourPun
             if (player.Value.gameObject.activeSelf)
                 winner = player.Key;
         }
-        textToUpdate.UpdateText("Player " + winner.ActorNumber + " wins" );
+        _textStart.UpdateText("Player " + winner.ActorNumber + " wins" );
         yield return new WaitForSeconds(secondsAtEnd);
-        textToUpdate.SetActive(true);
 
         foreach (var player in _players)
         {
@@ -116,7 +152,7 @@ public class ServerNetwork : MonoBehaviourPun
 
         _loosers.Clear();
 
-        StartCoroutine(StartGame(FindObjectsOfType<TextBehaviour>().Where(x => x.id == "startText").First()));
+        StartCoroutine(StartGame(true));
     }
    
     //player
@@ -140,6 +176,13 @@ public class ServerNetwork : MonoBehaviourPun
     }
 
     [PunRPC]
+    void RequestSecondaryShoot(Player player)
+    {
+        if (_players.ContainsKey(player))
+            _players[player].InstantiateSecondaryBullet(player);
+    }
+
+   [PunRPC]
     void RequestAccelerate(Player player)
     {
         if (!_view.IsMine)
@@ -163,6 +206,11 @@ public class ServerNetwork : MonoBehaviourPun
         _view.RPC("RequestShoot", serverReference, player);
     }
 
+    public void PlayerRequestSecondaryShoot(Player player)
+    {
+        _view.RPC("RequestSecondaryShoot", serverReference, player);
+    }
+
     public void PlayerRequestAccelerate(Player player)
     {
         _view.RPC("RequestAccelerate", serverReference, player);
@@ -172,41 +220,4 @@ public class ServerNetwork : MonoBehaviourPun
     {
         _view.RPC("RequestRotate", serverReference, player, axis);
     }
-
-    //bullet
-
-    public void BulletRequestInstantiate(Transform shotSpawn)
-    {
-        if (!_view.IsMine)
-            return;
-
-        PhotonNetwork.Instantiate("Bullet", shotSpawn.position, shotSpawn.rotation);
-    }
-
-    public void BulletRequestDestroy(BulletBehaviour bullet)
-    {
-        if (!_view.IsMine)
-            return;
-
-        PhotonNetwork.Destroy(bullet.gameObject);
-    }
-
-    //particles
-
-    public void ParticleRequestInstantiate(string particleName,Transform pos)
-    {
-        if (!_view.IsMine)
-            return;
-        
-        PhotonNetwork.Instantiate(particleName, pos.position, pos.rotation);
-    }
-
-    public void ParticleRequestDestroy(ParticleBehaviour particle)
-    {
-        if (!_view.IsMine)
-            return;
-
-        PhotonNetwork.Destroy(particle.gameObject);
-    }
-
 }

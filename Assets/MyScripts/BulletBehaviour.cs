@@ -11,6 +11,7 @@ public class BulletBehaviour : MonoBehaviourPun
     Rigidbody _rb;
     Boundary _boundary;
     ServerNetwork _server;
+    PhotonView _view;
 
     void Start ()
     {
@@ -21,16 +22,33 @@ public class BulletBehaviour : MonoBehaviourPun
         _boundary = FindObjectOfType<Boundary>();
     }
 
-    private void Update()
+    void Update()
     {
         if (_rb && _rb.position.x > _boundary.x + destroyTreshhold || _rb.position.x < -_boundary.x - destroyTreshhold || _rb.position.z > _boundary.z + destroyTreshhold || _rb.position.z < -_boundary.z - destroyTreshhold)
-            _server.BulletRequestDestroy(this);
+        {
+            if (_view.IsMine)
+                PhotonNetwork.Destroy(gameObject);
+        }
     }
 
-    private PhotonView _view;
-
-    public bool AreYouMine()
+    void OnTriggerEnter(Collider other)
     {
-        return _view.IsMine;
+        if(!_view)
+            _view = GetComponent<PhotonView>();
+
+        if (!_view.IsMine)
+            return;
+
+        var onHitable = other.GetComponent<IOnHit>();
+
+        if (onHitable != null)
+        {
+            onHitable.OnHit();
+        }
+
+        if (other.gameObject.layer == 11)
+            return;
+
+        PhotonNetwork.Destroy(gameObject);
     }
 }

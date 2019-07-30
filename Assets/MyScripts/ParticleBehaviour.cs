@@ -15,6 +15,6 @@ public class ParticleBehaviour : MonoBehaviourPun
     IEnumerator DestroyRoutine()
     {
         yield return new WaitForSeconds(GetComponent<ParticleSystem>().main.duration);
-        ServerNetwork.Instance.ParticleRequestDestroy(this);
+        PhotonNetwork.Destroy(gameObject);
     }
 }

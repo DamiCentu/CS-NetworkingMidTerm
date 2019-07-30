@@ -50,5 +50,7 @@ MonoBehaviour:
   - UpdateCanMove
   - DeactivateObject
   - ChangeColor
+  - UpdateText
+  - RequestSecondaryShoot
   DisableAutoOpenWizard: 1
-  ShowSettings: 0
+  ShowSettings: 1

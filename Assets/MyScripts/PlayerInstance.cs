@@ -4,7 +4,7 @@ using System;
 using Photon.Pun;
 using Photon.Realtime;
 
-public class PlayerInstance : MonoBehaviourPun
+public class PlayerInstance : MonoBehaviourPun , IOnHit
 {
     public float force = 15f;
     public float rotateSpeed = 5f;
@@ -12,12 +12,15 @@ public class PlayerInstance : MonoBehaviourPun
 	public GameObject shot;
 	public Transform shotSpawn;
 	public float fireRate;
-
+    public float secondaryFireRate;
+    public PlayerTextBehaviour playerNameText;
     public int life = 3;
 
     int _currentLife = 0;
 	 
-	private float nextFire;
+	float nextFire;
+    float secondaryNextFire;
+    float fireMultiplier = 1;
 
     Rigidbody _rb;
     Boundary _boundary;
@@ -44,6 +47,24 @@ public class PlayerInstance : MonoBehaviourPun
         _startPos = startPos;  
     }
 
+    public void SetPlayerName(string playerName)
+    {
+        playerNameText.SetText(playerName);
+    }
+
+    public void PowerUpPicked(float effectDuration)
+    {
+        fireMultiplier = 0.4f;
+        StartCoroutine(PowerUpRoutine(effectDuration));
+    }
+
+    IEnumerator PowerUpRoutine(float effectDuration)
+    {
+        yield return new WaitForSeconds(effectDuration);
+
+        fireMultiplier = 1;
+    }
+
     public void ResetPlayerInstance()
     {
         RequestActivateObject(true);
@@ -59,12 +80,24 @@ public class PlayerInstance : MonoBehaviourPun
 
         if (Time.time <= nextFire) return;
 
-        nextFire = Time.time + fireRate;
-        _server.BulletRequestInstantiate(shotSpawn);
+        nextFire = Time.time + fireRate * fireMultiplier;
+        PhotonNetwork.Instantiate("Bullet", shotSpawn.position, shotSpawn.rotation);
         _audioSource.Play();
     }
 
-	void FixedUpdate ()
+    public void InstantiateSecondaryBullet(Player player) //llamar cuando se hace el fire 2
+    {
+        if (!_server.PlayerCanMove)
+            return;
+
+        if (Time.time <= secondaryNextFire) return;
+
+        secondaryNextFire = Time.time + secondaryFireRate * fireMultiplier;
+        PhotonNetwork.Instantiate("SecondaryBullet", shotSpawn.position, shotSpawn.rotation).GetComponent<SecondaryBulletBehaviour>().SetOwner(this);
+        _audioSource.Play();
+    }
+
+    void FixedUpdate ()
 	{
         if (!_server.PlayerCanMove)
             return;
@@ -111,30 +144,6 @@ public class PlayerInstance : MonoBehaviourPun
         _rb.position = new Vector3(Mathf.Clamp(_rb.position.x, -_boundary.x, _boundary.x), 0.0f, Mathf.Clamp(_rb.position.z, -_boundary.z, _boundary.z));
     }
 
-    private void OnTriggerEnter(Collider other)
-    {
-        if (!_server || !_server.PlayerCanMove)
-            return;
-
-        var bullet = other.GetComponent<BulletBehaviour>();
-        if (bullet == null) return;
-        if (!_view.IsMine) return;
-
-
-        _currentLife--;
-        _server.BulletRequestDestroy(bullet);
-        if (_currentLife <= 0)
-        {
-            _server.ParticleRequestInstantiate("ExplotionPlayer", transform);
-            RequestActivateObject(false);
-            _server.SetLooser(this);
-        }
-        else
-        {
-            _server.ParticleRequestInstantiate("ExplotionAst", transform);
-        }        
-    }
-
     public void RequestActivateObject(bool active)
     {
         gameObject.SetActive(active);
@@ -147,4 +156,24 @@ public class PlayerInstance : MonoBehaviourPun
         gameObject.SetActive(active);
     }
 
+    public void OnHit()
+    {
+        if (!_server || !_server.PlayerCanMove)
+            return;
+
+        if (!_view.IsMine) return;
+
+        _currentLife--;
+
+        if (_currentLife <= 0)
+        {
+            PhotonNetwork.Instantiate("ExplotionPlayer", transform.position, transform.rotation);
+            RequestActivateObject(false);
+            _server.SetLooser(this);
+        }
+        else
+        {
+            PhotonNetwork.Instantiate("ExplotionAst", transform.position, transform.rotation);
+        }
+    }
 }

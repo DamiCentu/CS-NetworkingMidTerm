@@ -17,7 +17,7 @@ public class SpawnPoint : MonoBehaviourPun
 
     public void SetTaken(bool taken)
     {
-        _view.RPC("SetTakenRPC", RpcTarget.OthersBuffered, taken);
+        _view.RPC("SetTakenRPC", RpcTarget.AllBuffered, taken);
     }
 
     [PunRPC]

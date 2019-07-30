@@ -23,6 +23,11 @@ public class PlayerController : MonoBehaviourPun
         {
             _server.PlayerRequestShoot(PhotonNetwork.LocalPlayer);
         }
+
+        if (Input.GetButtonDown("Fire2"))
+        {
+            _server.PlayerRequestSecondaryShoot(PhotonNetwork.LocalPlayer);
+        }
     }
 
     void FixedUpdate()
