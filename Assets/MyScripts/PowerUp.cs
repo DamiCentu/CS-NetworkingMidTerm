@@ -42,7 +42,7 @@ public class PowerUp : MonoBehaviourPun
         if (player)
         {
             player.PowerUpPicked(effectDuration);
-            PhotonNetwork.Instantiate("PickUpPowerUpEffect", transform.position, Quaternion.Euler(new Vector3(-90, 0, 0))));
+            PhotonNetwork.Instantiate("PickUpPowerUpEffect", transform.position, Quaternion.Euler(new Vector3(-90, 0, 0)));
             PhotonNetwork.Destroy(gameObject);
         }
     }
