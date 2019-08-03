@@ -72,6 +72,9 @@ public class SecondaryBulletBehaviour : MonoBehaviourPun
             onHitable.OnHit();
         }
 
+        if (other.gameObject.layer == 11)
+            return;
+
         PhotonNetwork.Destroy(gameObject);
     }
 

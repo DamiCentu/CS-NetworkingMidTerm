@@ -10,21 +10,17 @@ public class SpiderBehaviour : MonoBehaviourPun
     public int hitsCanTake = 3;
     public float radiusOfWaypoints = 0.2f;
 
-    //Vector3[] _allDirection;
-
     Animator _anim;
     Rigidbody _rb;
     ServerNetwork _server;
     PhotonView _view;
     bool _canMove = true;
 
-    Waypoint _currentWaypoint;
+    public Waypoint _currentWaypoint;
     int _currentIndex = 0;
 
     void Start()
     { 
-        //_allDirection = new [] { Vector3.forward, Vector3.right, -Vector3.forward, -Vector3.right};
-
         _anim = GetComponent<Animator>();
         _rb = GetComponent<Rigidbody>();
         _view = GetComponent<PhotonView>();
@@ -65,7 +61,7 @@ public class SpiderBehaviour : MonoBehaviourPun
 
     void FixedUpdate()
     {
-        if (_currentWaypoint == null || _currentWaypoint.next == null || !_rb)
+        if (_currentWaypoint == null || _currentWaypoint.next == null || !_rb || !_view.IsMine)
             return;
 
         if(Vector3.Distance( _rb.position, _currentWaypoint.transform.position) < radiusOfWaypoints)
@@ -80,22 +76,22 @@ public class SpiderBehaviour : MonoBehaviourPun
         var direction = _currentWaypoint.transform.position - _rb.position;
         direction.Normalize();
 
-        if(direction == Vector3.forward)
+        if(direction.z > 0.8f)
         {
             SetAnimationValue("Z", -1);
             SetAnimationValue("X", 0);
         }
-        else if (direction == -Vector3.forward)
+        else if (direction.z < -0.8f)
         {
             SetAnimationValue("Z", 1);
             SetAnimationValue("X", 0);
         }
-        else if (direction == Vector3.right)
+        else if (direction.x > 0.8f)
         {
             SetAnimationValue("X", 1);
             SetAnimationValue("Z", 0);
         }
-        else if (direction == -Vector3.right)
+        else if (direction.x < -0.8f)
         {
             SetAnimationValue("X", -1);
             SetAnimationValue("Z", 0);
