@@ -15,12 +15,14 @@ public class PlayerInstance : MonoBehaviourPun , IOnHit
     public float secondaryFireRate;
     public PlayerTextBehaviour playerNameText;
     public int life = 3;
+    public ActivableGO shield;
 
     int _currentLife = 0;
 	 
-	float nextFire;
-    float secondaryNextFire;
-    float fireMultiplier = 1;
+	float _nextFire;
+    float _secondaryNextFire;
+    float _fireMultiplier = 1;
+    bool _hasShield = false;
 
     Rigidbody _rb;
     Boundary _boundary;
@@ -52,17 +54,34 @@ public class PlayerInstance : MonoBehaviourPun , IOnHit
         playerNameText.SetText(playerName);
     }
 
-    public void PowerUpPicked(float effectDuration)
+    public void PowerUpPicked(float effectDuration, PowerUp.PowerUpType type)
     {
-        fireMultiplier = 0.4f;
-        StartCoroutine(PowerUpRoutine(effectDuration));
+        if(type == PowerUp.PowerUpType.RapidShot)
+        {
+            _fireMultiplier = 0.4f;
+            StartCoroutine(PowerUpRoutine(effectDuration,type));
+        }
+        else if(type == PowerUp.PowerUpType.Shield)
+        {
+            _hasShield = true;
+            shield.RequestActivateObject(true);
+            StartCoroutine(PowerUpRoutine(effectDuration , type));
+        }
     }
 
-    IEnumerator PowerUpRoutine(float effectDuration)
+    IEnumerator PowerUpRoutine(float effectDuration , PowerUp.PowerUpType type)
     {
         yield return new WaitForSeconds(effectDuration);
 
-        fireMultiplier = 1;
+        if (type == PowerUp.PowerUpType.RapidShot)
+        {
+            _fireMultiplier = 1;
+        }
+        else if (type == PowerUp.PowerUpType.Shield)
+        {
+            _hasShield = false;
+            shield.RequestActivateObject(false);
+        }
     }
 
     public void ResetPlayerInstance()
@@ -78,9 +97,9 @@ public class PlayerInstance : MonoBehaviourPun , IOnHit
         if (!_server.PlayerCanMove)
             return;
 
-        if (Time.time <= nextFire) return;
+        if (Time.time <= _nextFire) return;
 
-        nextFire = Time.time + fireRate * fireMultiplier;
+        _nextFire = Time.time + fireRate * _fireMultiplier;
         PhotonNetwork.Instantiate("Bullet", shotSpawn.position, shotSpawn.rotation);
         _audioSource.Play();
     }
@@ -90,9 +109,9 @@ public class PlayerInstance : MonoBehaviourPun , IOnHit
         if (!_server.PlayerCanMove)
             return;
 
-        if (Time.time <= secondaryNextFire) return;
+        if (Time.time <= _secondaryNextFire) return;
 
-        secondaryNextFire = Time.time + secondaryFireRate * fireMultiplier;
+        _secondaryNextFire = Time.time + secondaryFireRate * _fireMultiplier;
         PhotonNetwork.Instantiate("SecondaryBullet", shotSpawn.position, shotSpawn.rotation).GetComponent<SecondaryBulletBehaviour>().SetOwner(this);
         _audioSource.Play();
     }
@@ -158,10 +177,14 @@ public class PlayerInstance : MonoBehaviourPun , IOnHit
 
     public void OnHit()
     {
-        if (!_server || !_server.PlayerCanMove)
+        if (!_server || !_server.PlayerCanMove || !_view.IsMine)
             return;
 
-        if (!_view.IsMine) return;
+        if(_hasShield)
+        {
+            PhotonNetwork.Instantiate("HitShieldParticle", transform.position, transform.rotation);
+            return;
+        }
 
         _currentLife--;
 

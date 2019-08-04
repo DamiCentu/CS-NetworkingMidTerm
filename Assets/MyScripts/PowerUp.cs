@@ -7,11 +7,15 @@ public class PowerUp : MonoBehaviourPun
 {
     public float tumble = 15;
     public float effectDuration = 5;
+    public Material shieldMaterial;
+    public MaterialChanger matChanger;
 
     Rigidbody _rb;
     Boundary _boundary;
     ServerNetwork _server;
     PhotonView _view;
+
+    PowerUpType _type = PowerUpType.RapidShot;
     void Start()
     {
         if (!_rb)
@@ -41,9 +45,23 @@ public class PowerUp : MonoBehaviourPun
 
         if (player)
         {
-            player.PowerUpPicked(effectDuration);
+            player.PowerUpPicked(effectDuration, _type);
             PhotonNetwork.Instantiate("PickUpPowerUpEffect", transform.position, Quaternion.Euler(new Vector3(-90, 0, 0)));
             PhotonNetwork.Destroy(gameObject);
         }
+    }
+
+    public void SetType(PowerUpType type)
+    {
+        _type = type;
+
+        if(type == PowerUpType.Shield)
+            matChanger.RequestChangeMaterial(shieldMaterial);
+    }
+
+    public enum PowerUpType
+    {
+        RapidShot,
+        Shield
     }
 }

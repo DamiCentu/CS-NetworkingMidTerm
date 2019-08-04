@@ -37,7 +37,9 @@ public class PowerUpSpawner : MonoBehaviour
             if (!ServerNetwork.Instance.PlayerCanMove)
                 yield return null;
 
-            PhotonNetwork.Instantiate("PowerUp", _spawners[random].transform.position, Quaternion.Euler(new Vector3 (-90,0,0)));
+            var powerUp = PhotonNetwork.Instantiate("PowerUp", _spawners[random].transform.position, Quaternion.Euler(new Vector3 (-90,0,0))).GetComponent<PowerUp>();
+            int rand = Random.Range(0, 2);
+            powerUp.SetType(rand == 0 ? PowerUp.PowerUpType.RapidShot : PowerUp.PowerUpType.Shield);
         }
     }
 }
