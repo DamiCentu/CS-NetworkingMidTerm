@@ -6,9 +6,13 @@ using Photon.Pun;
 public class PowerUpSpawner : MonoBehaviour
 {
     PowerUpSpawnPoints[] _spawners;
+    PhotonView _view;
 
     public void StartSpawning()
     {
+        _view = GetComponent<PhotonView>();
+        if (!_view.IsMine)
+            return;
         _spawners = FindObjectsOfType<PowerUpSpawnPoints>();
         StartCoroutine(SpawnRoutine());
     }
@@ -37,9 +41,17 @@ public class PowerUpSpawner : MonoBehaviour
             if (!ServerNetwork.Instance.PlayerCanMove)
                 yield return null;
 
-            var powerUp = PhotonNetwork.Instantiate("PowerUp", _spawners[random].transform.position, Quaternion.Euler(new Vector3 (-90,0,0))).GetComponent<PowerUp>();
-            int rand = Random.Range(0, 2);
-            powerUp.SetType(rand == 0 ? PowerUp.PowerUpType.RapidShot : PowerUp.PowerUpType.Shield);
+            if (Physics.OverlapSphere(_spawners[random].transform.position, 2f, Utility.LayerNumberToMask(11)).Length > 0)
+            {
+                yield return new WaitForSeconds(Random.Range(5f, 10f)); ;
+            }
+
+            if(ServerNetwork.Instance.PlayerCanMove)
+            {
+                var powerUp = PhotonNetwork.Instantiate("PowerUp", _spawners[random].transform.position, Quaternion.Euler(new Vector3(-90, 0, 0))).GetComponent<PowerUp>();
+                int rand = Random.Range(0, 2);
+                powerUp.SetType(rand == 0 ? PowerUp.PowerUpType.RapidShot : PowerUp.PowerUpType.Shield);
+            }
         }
     }
 }

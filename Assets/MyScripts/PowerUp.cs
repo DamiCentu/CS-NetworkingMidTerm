@@ -7,8 +7,9 @@ public class PowerUp : MonoBehaviourPun
 {
     public float tumble = 15;
     public float effectDuration = 5;
-    public Material shieldMaterial;
-    public MaterialChanger matChanger;
+    public ActivableGO shieldGO;
+    public ActivableGO rapidShootGO;
+   
 
     Rigidbody _rb;
     Boundary _boundary;
@@ -53,10 +54,19 @@ public class PowerUp : MonoBehaviourPun
 
     public void SetType(PowerUpType type)
     {
+        if (!_view)
+            _view = GetComponent<PhotonView>();
+
+        if (!_view.IsMine)
+            return;
+
         _type = type;
 
-        if(type == PowerUpType.Shield)
-            matChanger.RequestChangeMaterial(shieldMaterial);
+        if (_type == PowerUpType.Shield)
+        {
+            shieldGO.RequestActivateObject(true);
+            rapidShootGO.RequestActivateObject(false);
+        }
     }
 
     public enum PowerUpType

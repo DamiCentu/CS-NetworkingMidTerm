@@ -6,9 +6,13 @@ using Photon.Pun;
 public class AsteroidSpawner : MonoBehaviourPun
 {
     Boundary _boundary;
+    PhotonView _view;
 
     public void StartSpawning()
     {
+        _view = GetComponent<PhotonView>();
+        if (!_view.IsMine)
+            return;
         _boundary = FindObjectOfType<Boundary>();
         StartCoroutine(SpawnRoutine());
     }
@@ -24,11 +28,14 @@ public class AsteroidSpawner : MonoBehaviourPun
 
             yield return new WaitForSeconds(Random.Range(3f, 5f));
 
-            int side = Random.Range(0, 4);
-            var asteroid = PhotonNetwork.Instantiate("Asteroid" + Random.Range(0, 3).ToString(), _boundary.GetRandomPositionOnBoundary(side), Quaternion.identity).GetComponent<AsteroidBehaviour>();
-            if(asteroid)
+            if (ServerNetwork.Instance.PlayerCanMove)
             {
-                asteroid.SetVelocity(_boundary.GetDirectionBySide(side));
+                int side = Random.Range(0, 4);
+                var asteroid = PhotonNetwork.Instantiate("Asteroid" + Random.Range(0, 3).ToString(), _boundary.GetRandomPositionOnBoundary(side), Quaternion.identity).GetComponent<AsteroidBehaviour>();
+                if (asteroid)
+                {
+                    asteroid.SetVelocity(_boundary.GetDirectionBySide(side));
+                }
             }
         }
     }

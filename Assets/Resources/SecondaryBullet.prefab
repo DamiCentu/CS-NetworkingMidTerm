@@ -118,7 +118,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   speed: 12
   destroyTreshhold: 5
-  radiusToChase: 8
+  radiusToChase: 5
   smoothToRotate: 0.2
   maskToChase:
     serializedVersion: 2

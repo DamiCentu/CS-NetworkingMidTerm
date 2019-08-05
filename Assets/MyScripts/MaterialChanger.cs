@@ -8,17 +8,20 @@ public class MaterialChanger : MonoBehaviour
     PhotonView _view;
     MeshRenderer _rend;
 
-    Material _mat;
+    //Material _mat;
 
-    public void RequestChangeMaterial(Material mat)
+    public void RequestChangeMaterial()
     {
         if (!_view)
             _view = GetComponent<PhotonView>();
 
+        if (!_view.IsMine)
+            return;
+
         if (!_rend)
             _rend = GetComponent<MeshRenderer>();
 
-        _mat = mat;
+        //_mat = mat;
 
         _view.RPC("ChangeMaterial", RpcTarget.AllBuffered);
     }
@@ -26,6 +29,6 @@ public class MaterialChanger : MonoBehaviour
     [PunRPC]
     void ChangeMaterial()
     {
-        _rend.materials[0] = _mat;
+        _rend.materials[0].color = Color.blue;
     }
 }

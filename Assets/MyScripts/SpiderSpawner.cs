@@ -6,9 +6,13 @@ using Photon.Pun;
 public class SpiderSpawner : MonoBehaviour
 {
     SpiderSpawnerPoint[] _spawners;
+    PhotonView _view;
 
     public void StartSpawning()
     {
+        _view = GetComponent<PhotonView>();
+        if (!_view.IsMine)
+            return;
         _spawners = FindObjectsOfType<SpiderSpawnerPoint>();
         StartCoroutine(SpawnRoutine());
     }
@@ -29,15 +33,18 @@ public class SpiderSpawner : MonoBehaviour
             if (!ServerNetwork.Instance.PlayerCanMove)
                 yield return null;
 
-            while (Physics.OverlapSphere(_spawners[random].transform.position, 2.5f).Length > 0)
+            while (Physics.OverlapSphere(_spawners[random].transform.position, 5f).Length > 0)
             {
                 yield return null;
             }
 
-            var spider = PhotonNetwork.Instantiate("Spider", _spawners[random].startWaypoint.transform.position, Quaternion.identity).GetComponent<SpiderBehaviour>();
-            if (spider)
+            if (ServerNetwork.Instance.PlayerCanMove)
             {
-                spider.SetWaypoint(_spawners[random].startWaypoint);
+                var spider = PhotonNetwork.Instantiate("Spider", _spawners[random].startWaypoint.transform.position, Quaternion.identity).GetComponent<SpiderBehaviour>();
+                if (spider)
+                {
+                    spider.SetWaypoint(_spawners[random].startWaypoint);
+                }
             }
 
         }
