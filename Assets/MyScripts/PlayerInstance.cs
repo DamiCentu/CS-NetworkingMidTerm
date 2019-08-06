@@ -100,7 +100,7 @@ public class PlayerInstance : MonoBehaviourPun , IOnHit
         if (Time.time <= _nextFire) return;
 
         _nextFire = Time.time + fireRate * _fireMultiplier;
-        PhotonNetwork.Instantiate("Bullet", shotSpawn.position, shotSpawn.rotation);
+        PhotonNetwork.Instantiate("Bullet", shotSpawn.position, shotSpawn.rotation).GetComponent<BulletBehaviour>().SetOwner(this); ;
         _audioSource.Play();
     }
 

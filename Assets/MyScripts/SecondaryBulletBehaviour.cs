@@ -65,7 +65,11 @@ public class SecondaryBulletBehaviour : MonoBehaviourPun
         if (!_view.IsMine)
             return;
 
-        var onHitable = other.GetComponent<IOnHit>();
+        var player = other.gameObject.GetComponent<PlayerInstance>();
+        if (player && _owner == player)
+            return;
+
+            var onHitable = other.GetComponent<IOnHit>();
 
         if (onHitable != null)
         {

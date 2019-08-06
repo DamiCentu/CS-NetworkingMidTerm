@@ -12,6 +12,7 @@ public class BulletBehaviour : MonoBehaviourPun
     Boundary _boundary;
     ServerNetwork _server;
     PhotonView _view;
+    PlayerInstance _owner;
 
     void Start ()
     {
@@ -31,12 +32,21 @@ public class BulletBehaviour : MonoBehaviourPun
         }
     }
 
+    public void SetOwner(PlayerInstance owner)
+    {
+        _owner = owner;
+    }
+
     void OnTriggerEnter(Collider other)
     {
         if(!_view)
             _view = GetComponent<PhotonView>();
 
         if (!_view.IsMine)
+            return;
+
+        var player = other.gameObject.GetComponent<PlayerInstance>();
+        if (player && _owner == player)
             return;
 
         var onHitable = other.GetComponent<IOnHit>();
